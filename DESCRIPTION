@@ -1,0 +1,24 @@
+Package: kmOptimizer
+Type: Package
+Title: Optimal Survival Cutpoints
+Version: 0.1.0
+Maintainer: Piotr Tymoszuk <piotr.tymoszuk@gmail.com>
+Description: Finds the optimal variable cutoff stratifying the observations 
+    into high and low survival subsets. The cutoff is determined based on the 
+    maximal difference in survival determined by Kaplan-Meier method.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Authors@R: 
+    person("Piotr", "Tymoszuk", , "piotr.s.tymoszuk@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-0398-6034"))
+Imports: 
+    dplyr,
+    furrr,
+    future,
+    purrr,
+    rlang,
+    survival,
+    survminer,
+    tibble
+RoxygenNote: 7.1.1
