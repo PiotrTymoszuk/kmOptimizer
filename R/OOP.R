@@ -187,6 +187,9 @@
                          ', ',
                          event_var, ')')
 
+    strata_vars <- purrr::map_chr(strata_vars,
+                                  function(x) if(!kmOptimizer:::isValidName(x)) paste0('`', x, '`') else x)
+
     forms <- paste(surv_chunk, strata_vars, sep = ' ~ ')
 
     forms <- purrr::map(forms, as.formula)

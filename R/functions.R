@@ -37,10 +37,12 @@
 
     data <- dplyr::filter(data, complete.cases(data))
 
-    surv_obj <- survival::Surv(time = data[[time]],
-                               event = data[[event]])
+    surv_formula <- paste('survival::Surv(', time,
+                          ', ', event, ') ~ strata')
 
-    surv_test <- survival::survdiff(surv_obj ~ strata,
+    surv_formula <- as.formula(surv_formula)
+
+    surv_test <- survival::survdiff(surv_formula,
                                     data = data, ...)
 
     tibble::tibble(cutoff = cutoff,
@@ -101,6 +103,8 @@
 
     data <- data[c(time, event, variable)]
 
+    data <- dplyr::filter(data, complete.cases(data))
+
     classes <- purrr::map_lgl(data, is.numeric)
 
     if(any(!classes)) {
@@ -144,11 +148,11 @@
       future::plan('multisession')
 
       test_res <- furrr::future_map_dfr(uni_vals,
-                                        kmOptimizer::test_cutoff,
-                                        data = test_data,
-                                        time = 'surv_time',
-                                        event = 'event_var',
-                                        variable = 'test_var', ...,
+                                        function(x) kmOptimizer::test_cutoff(data = data,
+                                                                             time = time,
+                                                                             event = event,
+                                                                             variable = variable,
+                                                                             cutoff = x, ...),
                                         .options = furrr::furrr_options(seed = TRUE,
                                                                         packages = c('dplyr',
                                                                                      'furrr',
@@ -159,12 +163,11 @@
     } else {
 
       test_res <- purrr::map_dfr(uni_vals,
-                                 kmOptimizer::test_cutoff,
-                                 data = test_data,
-                                 time = 'surv_time',
-                                 event = 'event_var',
-                                 variable = 'test_var', ...)
-
+                                 function(x) kmOptimizer::test_cutoff(data = data,
+                                                                      time = time,
+                                                                      event = event,
+                                                                      variable = variable,
+                                                                      cutoff = x, ...))
 
     }
 
@@ -173,6 +176,15 @@
     test_res <- dplyr::filter(test_res,
                               n_low >= min_n,
                               n_high >= min_n)
+
+    if(nrow(test_res) == 0) {
+
+      warning('No cutoff could be found: nearly constant variable?',
+              call. = FALSE)
+
+      return(NULL)
+
+    }
 
     cutoff_stats <- dplyr::filter(test_res,
                                   p_value == min(p_value))
@@ -191,13 +203,13 @@
 
     ## stratification
 
-    for(i in new_name) {
+    for(i in seq_along(new_name)) {
 
       data <- dplyr::mutate(data,
                             .observation = 1:nrow(data),
-                            !!i := cut(.data[[variable]],
-                                       c(-Inf, cutoff, Inf),
-                                       c('low', 'high')))
+                            !!new_name[i] := cut(.data[[variable]],
+                                                 c(-Inf, cutoff[i], Inf),
+                                                 c('low', 'high')))
 
     }
 
